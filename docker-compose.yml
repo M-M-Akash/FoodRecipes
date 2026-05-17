@@ -27,6 +27,7 @@ services:
       DB_SID: XE
       DB_USER: SYSTEM
       DB_PASSWORD: secret
+      AREA: ${AREA:-Mexican}  # set AREA in .env or override from CLI
 
 
 volumes:
