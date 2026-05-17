@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Recipe Explorer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+
+        header {
+            background: #c0392b;
+            color: white;
+            padding: 28px 20px;
+            text-align: center;
+        }
+        header h1 { font-size: 2rem; margin-bottom: 6px; }
+        header p { opacity: 0.85; font-size: 0.95rem; }
+
+        .search-section { max-width: 620px; margin: 32px auto; padding: 0 20px; }
+        .search-form { display: flex; gap: 10px; }
+        .search-form select {
+            flex: 1; padding: 13px 16px; font-size: 1rem;
+            border: 2px solid #ddd; border-radius: 6px; outline: none;
+            background: white; cursor: pointer; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23999' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center;
+        }
+        .search-form select:focus { border-color: #c0392b; }
+        .search-form button {
+            padding: 13px 26px; background: #c0392b; color: white;
+            border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;
+            white-space: nowrap;
+        }
+        .search-form button:hover { background: #a93226; }
+
+        .hint {
+            text-align: center; color: #999; margin-top: 16px; font-size: 0.88rem;
+        }
+        .error {
+            color: #c0392b; text-align: center; margin-top: 14px;
+            font-size: 0.95rem; font-weight: bold;
+        }
+
+        .results { max-width: 1200px; margin: 10px auto 40px; padding: 0 20px; }
+        .results-header {
+            margin-bottom: 16px; font-size: 1rem; color: #555;
+        }
+        .results-header strong { color: #c0392b; }
+
+        table {
+            width: 100%; border-collapse: collapse; background: white;
+            border-radius: 8px; overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        thead th {
+            background: #c0392b; color: white; padding: 13px 16px;
+            text-align: left; font-size: 0.82rem; text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        tbody td {
+            padding: 12px 16px; border-bottom: 1px solid #f0f0f0;
+            vertical-align: top; font-size: 0.9rem;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: #fdf5f5; }
+
+        .thumb {
+            width: 90px; height: 65px; object-fit: cover;
+            border-radius: 5px; display: block;
+        }
+        .meal-name { font-weight: bold; min-width: 160px; }
+        .instructions {
+            max-width: 480px; color: #555; line-height: 1.5; font-size: 0.85rem;
+        }
+        .yt-btn {
+            display: inline-block; padding: 6px 13px; background: #e00; color: white;
+            text-decoration: none; border-radius: 4px; font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .yt-btn:hover { background: #b00; }
+        .no-video { color: #bbb; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🍽 Meal Recipe Explorer</h1>
+    <p>Search recipes by cuisine — data is fetched from TheMealDB and stored locally</p>
+</header>
+
+<div class="search-section">
+    <form class="search-form" action="/search" method="get">
+        <select name="area">
+            <option value="" disabled {% if not query %}selected{% endif %}>-- Select a cuisine --</option>
+            {% for area_name in areas %}
+            <option value="{{ area_name }}" {% if area_name == query %}selected{% endif %}>
+                {{ area_name }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Search</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+</div>
+
+{% if meals %}
+<div class="results">
+    <p class="results-header">
+        Found <strong>{{ meals | length }} recipes</strong> for "{{ query }}"
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Photo</th>
+                <th>Meal</th>
+                <th>Instructions</th>
+                <th>Video</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for meal in meals %}
+            <tr>
+                <td>
+                    {% if meal.thumbnail_url %}
+                    <img class="thumb" src="{{ meal.thumbnail_url }}" alt="{{ meal.name }}">
+                    {% endif %}
+                </td>
+                <td class="meal-name">{{ meal.name }}</td>
+                <td class="instructions">
+                    {% if meal.recipe and meal.recipe.instructions %}
+                        {{ meal.recipe.instructions[:250] }}{% if meal.recipe.instructions | length > 250 %}…{% endif %}
+                    {% else %}
+                        <span style="color:#bbb">No instructions available</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if meal.recipe and meal.recipe.youtube_url %}
+                    <a class="yt-btn" href="{{ meal.recipe.youtube_url }}" target="_blank">▶ Watch</a>
+                    {% else %}
+                    <span class="no-video">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+</body>
+</html>
