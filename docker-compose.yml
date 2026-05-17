@@ -4,7 +4,7 @@ services:
   oracle-db:
     image: gvenzl/oracle-xe:21-slim
     environment:
-      ORACLE_PASSWORD: secret
+      ORACLE_PASSWORD: ${DB_PASSWORD}
     ports:
       - "1521:1521"
     volumes:
@@ -24,11 +24,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DB_HOST: oracle-db
-      DB_PORT: 1521
-      DB_SID: XE
-      DB_USER: SYSTEM
-      DB_PASSWORD: secret
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_SID: ${DB_SID}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
 
 
 volumes:

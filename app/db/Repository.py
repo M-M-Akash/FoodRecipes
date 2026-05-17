@@ -1,7 +1,10 @@
 from sqlalchemy.orm import Session, joinedload
 from fastapi import Depends
 
-from db.Database import Area, Meal, Recipe, get_session
+from db.Database import get_session
+from models.area import Area
+from models.meal import Meal
+from models.recipe import Recipe
 
 
 class MealRepository:
@@ -10,9 +13,9 @@ class MealRepository:
 
     def create_tables(self):
         from db.Database import engine
-        Area.__table__.create(bind=engine, checkfirst=True)
-        Meal.__table__.create(bind=engine, checkfirst=True)
-        Recipe.__table__.create(bind=engine, checkfirst=True)
+        from models.base import Base
+        import models  # ensure all models are registered with Base metadata
+        Base.metadata.create_all(bind=engine)
 
     def area_exists(self, area_name: str) -> bool:
         return self.session.query(Area).filter_by(id=area_name).first() is not None
