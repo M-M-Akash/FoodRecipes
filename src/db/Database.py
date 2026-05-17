@@ -1,14 +1,26 @@
 from sqlalchemy import String, Text, ForeignKey
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker, Session
 
 from sqlalchemy_utils import UUIDType
 from sqlalchemy.dialects.oracle import TIMESTAMP
+from sqlalchemy import create_engine
 import uuid
 import sqlalchemy as sa
 
+from core.config import settings
 
 
-# Create a SQLAlchemy engine
+engine = create_engine(settings.db_url)
+SessionLocal = sessionmaker(bind=engine)
+
+
+def get_session():
+    """FastAPI dependency that yields a DB session and closes it after the request."""
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 class Base(DeclarativeBase):

@@ -1,9 +1,9 @@
 import requests
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from services.meal_service import meal_service
+from services.meal_service import MealService, get_meal_service, api_client
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -15,7 +15,7 @@ def _render(request: Request, **ctx):
 
 def _areas():
     try:
-        return meal_service.get_all_areas()
+        return api_client.get_all_areas()
     except Exception:
         return []
 
@@ -26,7 +26,11 @@ def index(request: Request):
 
 
 @router.get("/search", response_class=HTMLResponse)
-def search(request: Request, area: str = ""):
+def search(
+    request: Request,
+    area: str = "",
+    service: MealService = Depends(get_meal_service),
+):
     area = area.strip()
     areas = _areas()
 
@@ -34,7 +38,7 @@ def search(request: Request, area: str = ""):
         return _render(request, areas=areas)
 
     try:
-        meals = meal_service.get_or_fetch_meals(area)
+        meals = service.get_or_fetch_meals(area)
 
         if meals is None:
             return _render(request, areas=areas, query=area,
