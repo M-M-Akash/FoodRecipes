@@ -1,0 +1,7 @@
+oracledb>=1.4.0
+greenlet==2.0.2
+python-dotenv==1.0.0
+requests>=2.31.0
+SQLAlchemy==2.0.21
+SQLAlchemy-Utils==0.41.1
+typing_extensions==4.8.0
