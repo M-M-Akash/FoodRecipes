@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload
 from fastapi import Depends
 
@@ -20,12 +21,21 @@ class MealRepository:
     def area_exists(self, area_name: str) -> bool:
         return self.session.query(Area).filter_by(id=area_name).first() is not None
 
-    def insert_area(self, area_name: str):
-        self.session.add(Area(id=area_name))
+    def upsert_area(self, area_name: str) -> None:
+        self.session.execute(
+            text("""
+                MERGE INTO areas dest
+                USING (SELECT :id AS id FROM dual) src
+                ON (dest.id = src.id)
+                WHEN NOT MATCHED THEN
+                    INSERT (id) VALUES (:id)
+            """),
+            {"id": area_name},
+        )
         self.session.flush()
 
-    def bulk_insert_meals(self, meals: list, area_id: str):
-        mappings = [
+    def bulk_upsert_meals(self, meals: list, area_id: str) -> None:
+        params = [
             {
                 "id": m["idMeal"],
                 "name": m["strMeal"],
@@ -34,11 +44,23 @@ class MealRepository:
             }
             for m in meals
         ]
-        self.session.bulk_insert_mappings(Meal, mappings)
+        self.session.execute(
+            text("""
+                MERGE INTO meals dest
+                USING (SELECT :id AS id FROM dual) src
+                ON (dest.id = src.id)
+                WHEN NOT MATCHED THEN
+                    INSERT (id, name, thumbnail_url, area_id)
+                    VALUES (:id, :name, :thumbnail_url, :area_id)
+            """),
+            params,
+        )
         self.session.flush()
 
-    def bulk_insert_recipes(self, meals: list):
-        mappings = [
+    def bulk_upsert_recipes(self, meals: list) -> None:
+        # :instructions is passed as a direct bind variable (not through USING)
+        # to avoid Oracle CLOB restrictions inside SELECT FROM dual subqueries.
+        params = [
             {
                 "meal_id": m["idMeal"],
                 "instructions": m.get("strInstructions", ""),
@@ -46,7 +68,17 @@ class MealRepository:
             }
             for m in meals
         ]
-        self.session.bulk_insert_mappings(Recipe, mappings)
+        self.session.execute(
+            text("""
+                MERGE INTO recipes dest
+                USING (SELECT :meal_id AS meal_id FROM dual) src
+                ON (dest.meal_id = src.meal_id)
+                WHEN NOT MATCHED THEN
+                    INSERT (meal_id, instructions, youtube_url)
+                    VALUES (:meal_id, :instructions, :youtube_url)
+            """),
+            params,
+        )
 
     def get_meals_by_area(self, area_name: str):
         return self.session.query(Meal).filter_by(area_id=area_name).all()

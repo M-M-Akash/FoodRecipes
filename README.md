@@ -7,7 +7,7 @@ A portfolio web app that fetches meal recipes from [TheMealDB](https://www.theme
 ## What it does
 
 - Browse recipes by cuisine area (Mexican, Italian, Japanese, etc.)
-- First search fetches from the API and bulk-inserts meals and recipes into Oracle in a single operation — subsequent searches load from the DB
+- First search for an area fetches all recipe details from TheMealDB **in parallel** (up to 5 concurrent requests) and bulk-upserts them into Oracle — subsequent searches load instantly from the DB
 - Displays meal name, thumbnail, instructions, and a YouTube link per recipe
 
 ## Tech Stack
@@ -56,10 +56,23 @@ The Oracle container takes ~90 seconds on first start. The app waits for it via 
 
 ## Running tests
 
-Install dependencies and run pytest from the project root:
+Tests run inside the app container (no local Python environment needed):
 
 ```bash
-pip install -r requirements.txt
-pytest
+sudo docker compose run --no-deps --rm \
+  -v "$(pwd)/tests:/app/tests" \
+  -v "$(pwd)/pytest.ini:/app/pytest.ini" \
+  app python -m pytest tests/ -v
 ```
+
+`--no-deps` skips starting the Oracle DB since all tests mock the data layer.
+
+## How first-search fetching works
+
+When an area is not yet in the database:
+
+1. The route handler (`async def search`) fetches the list of meals for that area from TheMealDB
+2. All individual recipe detail requests are fired **concurrently** using `asyncio.gather` with an `asyncio.Semaphore(5)` cap — this replaces the old sequential loop with a `time.sleep(0.3)` per meal
+3. The synchronous SQLAlchemy writes run in FastAPI's thread pool via `run_in_threadpool`, keeping the async event loop unblocked
+4. Each insert uses an Oracle **MERGE** statement (`WHEN NOT MATCHED THEN INSERT`) instead of a plain `INSERT` — this means two concurrent requests for the same uncached area cannot cause a primary key violation; the second write is silently a no-op
 

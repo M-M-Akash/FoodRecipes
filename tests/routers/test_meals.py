@@ -1,4 +1,4 @@
-import requests
+import httpx
 from unittest.mock import patch, MagicMock
 
 
@@ -53,7 +53,7 @@ def test_search_empty_area(client):
 
 def test_search_api_error(client_with_mock_service):
     client, mock_service = client_with_mock_service
-    mock_service.get_or_fetch_meals.side_effect = requests.RequestException("API down")
+    mock_service.get_or_fetch_meals.side_effect = httpx.RequestError("API down")
 
     with patch("routers.meals.api_client") as mock_api:
         mock_api.get_all_areas.return_value = []

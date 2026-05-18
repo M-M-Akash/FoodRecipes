@@ -1,9 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 from main import app
-from services.meal_service import get_meal_service
+from services.meal_service import get_meal_service, MealService
 
 
 def make_mock_meal(name: str) -> MagicMock:
@@ -23,7 +23,7 @@ def client():
 
 @pytest.fixture
 def mock_service():
-    return MagicMock()
+    return MagicMock(spec=MealService)
 
 
 @pytest.fixture

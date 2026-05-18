@@ -1,4 +1,4 @@
-import requests
+import httpx
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -26,7 +26,7 @@ def index(request: Request):
 
 
 @router.get("/search", response_class=HTMLResponse)
-def search(
+async def search(
     request: Request,
     area: str = "",
     service: MealService = Depends(get_meal_service),
@@ -38,7 +38,7 @@ def search(
         return _render(request, areas=areas)
 
     try:
-        meals = service.get_or_fetch_meals(area)
+        meals = await service.get_or_fetch_meals(area)
 
         if meals is None:
             return _render(request, areas=areas, query=area,
@@ -46,7 +46,7 @@ def search(
 
         return _render(request, areas=areas, meals=meals, query=area)
 
-    except requests.RequestException:
+    except httpx.RequestError:
         return _render(request, areas=areas, query=area,
                        error="Could not reach the recipe API. Please try again later.")
     except Exception as e:
